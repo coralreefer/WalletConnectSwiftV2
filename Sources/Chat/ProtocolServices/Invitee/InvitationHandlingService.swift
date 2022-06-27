@@ -88,15 +88,13 @@ class InvitationHandlingService {
 
         let agreementKeysI = try kms.performKeyAgreement(selfPublicKey: selfPubKey, peerPublicKey: invite.pubKey)
 
-        // TODO - fix with new specs
-//        let decryptedData = try codec.decode(sealboxString: inviteParams.invite, symmetricKey: agreementKeysI.sharedKey.rawRepresentation)
-//
-//        let invite = try JSONDecoder().decode(Invite.self, from: decryptedData)
-//
-//        try kms.setSymmetricKey(agreementKeysI.sharedKey, for: payload.topic)
-//
-//        invitePayloadStore.set(payload, forKey: inviteParams.id)
-//
-//        onInvite?(InviteEnvelope(pubKey: inviteParams.pubKey, invite: invite))
+        // agreement keys already stored by serializer
+        let responseTopic = agreementKeysI.derivedTopic()
+        let inviteResponse = InviteResponse(pubKey: selfPubKeyHex)
+        let response = JsonRpcResult.response(JSONRPCResponse<AnyCodable>(id: payload.request.id, result: AnyCodable(inviteResponse)))
+
+        Task {try await networkingInteractor.respond(topic: responseTopic, response: response)}
+        invitePayloadStore.set(payload, forKey: invite.pubKey)
+        onInvite?(InviteEnvelope(pubKey: invite.pubKey, invite: invite))
     }
 }
