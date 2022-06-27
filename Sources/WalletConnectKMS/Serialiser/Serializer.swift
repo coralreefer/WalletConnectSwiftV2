@@ -51,6 +51,7 @@ public class Serializer: Serializing {
                 return decodedType
             }
         } catch {
+            print(error)
             return nil
         }
     }

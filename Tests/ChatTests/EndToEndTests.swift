@@ -49,15 +49,15 @@ final class ChatTests: XCTestCase {
     }
 
     func testInvite() async {
-//        await waitClientsConnected()
-//        let inviteExpectation = expectation(description: "invitation expectation")
-//        let account = Account(chainIdentifier: "eip155:1", address: "0x3627523167367216556273151")!
-//        let pubKey = try! await invitee.register(account: account)
-//        try! await inviter.invite(publicKey: pubKey, openingMessage: "")
-//        invitee.invitePublisher.sink { _ in
-//            inviteExpectation.fulfill()
-//        }.store(in: &publishers)
-//        wait(for: [inviteExpectation], timeout: 4)
+        await waitClientsConnected()
+        let inviteExpectation = expectation(description: "invitation expectation")
+        let account = Account(chainIdentifier: "eip155:1", address: "0x3627523167367216556273151")!
+        let pubKey = try! await invitee.register(account: account)
+        try! await inviter.invite(publicKey: pubKey, openingMessage: "")
+        invitee.invitePublisher.sink { _ in
+            inviteExpectation.fulfill()
+        }.store(in: &publishers)
+        wait(for: [inviteExpectation], timeout: 4)
     }
 
     func testAcceptAndCreateNewThread() async {

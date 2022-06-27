@@ -29,12 +29,15 @@ class InviteService {
         let inviteTopic = try AgreementPublicKey(hex: peerPubKey).rawRepresentation.sha256().toHexString()
 
         try kms.setSymmetricKey(symKeyI.sharedKey, for: inviteTopic)
+        print("inviter sym key \(symKeyI.sharedKey.hexRepresentation)")
 
         let inviteRequestParams = InviteParams(pubKey: selfPubKeyY.hexRepresentation, invite: invite)
 
         let request = JSONRPCRequest<ChatRequestParams>(params: .invite(inviteRequestParams))
 
-        try await networkingInteractor.subscribe(topic: inviteTopic)
+        // 2. Proposer subscribes to topic R which is the hash of the derived symKey
+        let responseTopic = symKeyI.derivedTopic()
+        try await networkingInteractor.subscribe(topic: responseTopic)
 
         try await networkingInteractor.request(request, topic: inviteTopic, envelopeType: .type1(pubKey: peerPublicKeyRaw))
 
