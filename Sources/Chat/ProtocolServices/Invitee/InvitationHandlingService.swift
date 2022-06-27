@@ -46,11 +46,13 @@ class InvitationHandlingService {
 
         let response = JsonRpcResult.response(JSONRPCResponse<AnyCodable>(id: payload.request.id, result: AnyCodable(inviteResponse)))
 
-        try await networkingInteractor.respond(topic: payload.topic, response: response)
+        let responseTopic = getInviteResponseTopic(payload)
 
-        guard case .invite(let inviteParams) = payload.request.params else {return}
+        try await networkingInteractor.respond(topic: responseTopic, response: response)
 
-        let threadAgreementKeys = try kms.performKeyAgreement(selfPublicKey: selfThreadPubKey, peerPublicKey: inviteParams.pubKey)
+        guard case .invite(let invite) = payload.request.params else {return}
+
+        let threadAgreementKeys = try kms.performKeyAgreement(selfPublicKey: selfThreadPubKey, peerPublicKey: invite.pubKey)
 
         let threadTopic = threadAgreementKeys.derivedTopic()
 
@@ -78,10 +80,25 @@ class InvitationHandlingService {
 
     private func handleInvite(_ invite: Invite, _ payload: RequestSubscriptionPayload) throws {
         logger.debug("did receive an invite")
+
+
+//        // need to generate another pub key for a thread
+//        let threadPubKey = try kms.createX25519KeyPair()
+//        // todo store it and handle in accept
+//
+//        let inviteResponse = InviteResponse(pubKey: threadPubKey.hexRepresentation)
+//        let response = JsonRpcResult.response(JSONRPCResponse<AnyCodable>(id: payload.request.id, result: AnyCodable(inviteResponse)))
+
+        invitePayloadStore.set(payload, forKey: invite.pubKey)
+        onInvite?(InviteEnvelope(pubKey: invite.pubKey, invite: invite))
+    }
+
+    private func getInviteResponseTopic(_ payload: RequestSubscriptionPayload) -> String {
         //todo - remove topicToInvitationPubKeyStore ?
+
         guard let selfPubKeyHex = try? topicToInvitationPubKeyStore.get(key: payload.topic) else {
             logger.debug("PubKey for invitation topic not found")
-            return
+            fatalError("todo")
         }
 
         let selfPubKey = try AgreementPublicKey(hex: selfPubKeyHex)
@@ -90,11 +107,7 @@ class InvitationHandlingService {
 
         // agreement keys already stored by serializer
         let responseTopic = agreementKeysI.derivedTopic()
-        let inviteResponse = InviteResponse(pubKey: selfPubKeyHex)
-        let response = JsonRpcResult.response(JSONRPCResponse<AnyCodable>(id: payload.request.id, result: AnyCodable(inviteResponse)))
-
-        Task {try await networkingInteractor.respond(topic: responseTopic, response: response)}
-        invitePayloadStore.set(payload, forKey: invite.pubKey)
-        onInvite?(InviteEnvelope(pubKey: invite.pubKey, invite: invite))
+        return responseTopic
     }
+
 }

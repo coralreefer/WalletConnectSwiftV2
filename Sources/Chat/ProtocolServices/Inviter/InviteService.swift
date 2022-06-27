@@ -27,8 +27,8 @@ class InviteService {
         let invite = Invite(message: openingMessage, account: account, pubKey: selfPubKeyY.hexRepresentation)
         let symKeyI = try kms.performKeyAgreement(selfPublicKey: selfPubKeyY, peerPublicKey: peerPubKey)
         let inviteTopic = try AgreementPublicKey(hex: peerPubKey).rawRepresentation.sha256().toHexString()
-
         try kms.setSymmetricKey(symKeyI.sharedKey, for: inviteTopic)
+
         print("💄 - agreement pubkey - \(selfPubKeyY.hexRepresentation)")
         print("inviter sym key \(symKeyI.sharedKey.hexRepresentation)")
 
@@ -36,6 +36,9 @@ class InviteService {
 
         // 2. Proposer subscribes to topic R which is the hash of the derived symKey
         let responseTopic = symKeyI.derivedTopic()
+
+        try kms.setSymmetricKey(symKeyI.sharedKey, for: responseTopic)
+
         try await networkingInteractor.subscribe(topic: responseTopic)
 
         try await networkingInteractor.request(request, topic: inviteTopic, envelopeType: .type1(pubKey: selfPubKeyY.rawRepresentation))
