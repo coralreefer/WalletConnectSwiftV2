@@ -76,8 +76,9 @@ class InvitationHandlingService {
         }.store(in: &publishers)
     }
 
-    private func handleInvite(_ inviteParams: InviteParams, _ payload: RequestSubscriptionPayload) throws {
+    private func handleInvite(_ invite: Invite, _ payload: RequestSubscriptionPayload) throws {
         logger.debug("did receive an invite")
+        //todo - remove topicToInvitationPubKeyStore ?
         guard let selfPubKeyHex = try? topicToInvitationPubKeyStore.get(key: payload.topic) else {
             logger.debug("PubKey for invitation topic not found")
             return
@@ -85,7 +86,7 @@ class InvitationHandlingService {
 
         let selfPubKey = try AgreementPublicKey(hex: selfPubKeyHex)
 
-        let agreementKeysI = try kms.performKeyAgreement(selfPublicKey: selfPubKey, peerPublicKey: inviteParams.pubKey)
+        let agreementKeysI = try kms.performKeyAgreement(selfPublicKey: selfPubKey, peerPublicKey: invite.pubKey)
 
         // TODO - fix with new specs
 //        let decryptedData = try codec.decode(sealboxString: inviteParams.invite, symmetricKey: agreementKeysI.sharedKey.rawRepresentation)

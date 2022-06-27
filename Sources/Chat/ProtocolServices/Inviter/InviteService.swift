@@ -10,7 +10,7 @@ class InviteService {
     let kms: KeyManagementService
 
     var onNewThread: ((String) -> Void)?
-    var onInvite: ((InviteParams) -> Void)?
+    var onInvite: ((Invite) -> Void)?
 
     init(networkingInteractor: NetworkInteracting,
          kms: KeyManagementService,
@@ -22,24 +22,23 @@ class InviteService {
     }
 
     func invite(peerPubKey: String, openingMessage: String, account: Account) async throws {
+        print("💄peer pub key from registry \(peerPubKey)")
         let selfPubKeyY = try kms.createX25519KeyPair()
-        let invite = Invite(message: openingMessage, account: account)
-        let peerPublicKeyRaw = Data(hex: peerPubKey)
+        let invite = Invite(message: openingMessage, account: account, pubKey: selfPubKeyY.hexRepresentation)
         let symKeyI = try kms.performKeyAgreement(selfPublicKey: selfPubKeyY, peerPublicKey: peerPubKey)
         let inviteTopic = try AgreementPublicKey(hex: peerPubKey).rawRepresentation.sha256().toHexString()
 
         try kms.setSymmetricKey(symKeyI.sharedKey, for: inviteTopic)
+        print("💄 - agreement pubkey - \(selfPubKeyY.hexRepresentation)")
         print("inviter sym key \(symKeyI.sharedKey.hexRepresentation)")
 
-        let inviteRequestParams = InviteParams(pubKey: selfPubKeyY.hexRepresentation, invite: invite)
-
-        let request = JSONRPCRequest<ChatRequestParams>(params: .invite(inviteRequestParams))
+        let request = JSONRPCRequest<ChatRequestParams>(params: .invite(invite))
 
         // 2. Proposer subscribes to topic R which is the hash of the derived symKey
         let responseTopic = symKeyI.derivedTopic()
         try await networkingInteractor.subscribe(topic: responseTopic)
 
-        try await networkingInteractor.request(request, topic: inviteTopic, envelopeType: .type1(pubKey: peerPublicKeyRaw))
+        try await networkingInteractor.request(request, topic: inviteTopic, envelopeType: .type1(pubKey: selfPubKeyY.rawRepresentation))
 
         logger.debug("invite sent on topic: \(inviteTopic)")
     }
