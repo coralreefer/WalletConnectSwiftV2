@@ -46,11 +46,11 @@ class InvitationHandlingService {
 
         let response = JsonRpcResult.response(JSONRPCResponse<AnyCodable>(id: payload.request.id, result: AnyCodable(inviteResponse)))
 
-        let responseTopic = getInviteResponseTopic(payload)
+        guard case .invite(let invite) = payload.request.params else {return}
+
+        let responseTopic = try getInviteResponseTopic(payload, invite)
 
         try await networkingInteractor.respond(topic: responseTopic, response: response)
-
-        guard case .invite(let invite) = payload.request.params else {return}
 
         let threadAgreementKeys = try kms.performKeyAgreement(selfPublicKey: selfThreadPubKey, peerPublicKey: invite.pubKey)
 
@@ -93,13 +93,15 @@ class InvitationHandlingService {
         onInvite?(InviteEnvelope(pubKey: invite.pubKey, invite: invite))
     }
 
-    private func getInviteResponseTopic(_ payload: RequestSubscriptionPayload) -> String {
+    private func getInviteResponseTopic(_ payload: RequestSubscriptionPayload, _ invite: Invite) throws -> String {
         //todo - remove topicToInvitationPubKeyStore ?
 
         guard let selfPubKeyHex = try? topicToInvitationPubKeyStore.get(key: payload.topic) else {
             logger.debug("PubKey for invitation topic not found")
             fatalError("todo")
         }
+
+
 
         let selfPubKey = try AgreementPublicKey(hex: selfPubKeyHex)
 
