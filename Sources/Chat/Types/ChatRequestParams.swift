@@ -3,7 +3,7 @@ import WalletConnectUtils
 
 enum ChatRequestParams: Codable, Equatable {
     case invite(Invite)
-    case message(String)
+    case message(Message)
 }
 
 extension JSONRPCRequest {

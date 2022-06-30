@@ -82,4 +82,24 @@ final class ChatTests: XCTestCase {
 
         wait(for: [newThreadinviteeExpectation, newThreadInviterExpectation], timeout: 4)
     }
+
+    func testMessage() async {
+        await waitClientsConnected()
+        let messageExpectation = expectation(description: "message received")
+
+
+        let account = Account(chainIdentifier: "eip155:1", address: "0x3627523167367216556273151")!
+        let pubKey = try! await invitee.register(account: account)
+        try! await inviter.invite(publicKey: pubKey, openingMessage: "opening message")
+
+        invitee.invitePublisher.sink { [unowned self] inviteEnvelope in
+            Task {try! await invitee.accept(inviteId: inviteEnvelope.pubKey)}
+        }.store(in: &publishers)
+
+        invitee.newThreadPublisher.sink { [unowned self] thread in
+            invitee.message(topic: thread.topic, message: <#T##String#>)
+        }.store(in: &publishers)
+
+        wait(for: [messageExpectation], timeout: 4)
+    }
 }

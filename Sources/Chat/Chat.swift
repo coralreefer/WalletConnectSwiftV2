@@ -6,16 +6,17 @@ import Combine
 
 class Chat {
     private var publishers = [AnyCancellable]()
-    let registry: Registry
-    let registryService: RegistryService
-    let invitationHandlingService: InvitationHandlingService
-    let inviteService: InviteService
+    private let registry: Registry
+    private let registryService: RegistryService
+    private let messagingService: MessagingService
+    private let invitationHandlingService: InvitationHandlingService
+    private let inviteService: InviteService
     let kms: KeyManagementService
 
     let socketConnectionStatusPublisher: AnyPublisher<SocketConnectionStatus, Never>
 
-    var newThreadPublisherSubject = PassthroughSubject<String, Never>()
-    public var newThreadPublisher: AnyPublisher<String, Never> {
+    var newThreadPublisherSubject = PassthroughSubject<Thread, Never>()
+    public var newThreadPublisher: AnyPublisher<Thread, Never> {
         newThreadPublisherSubject.eraseToAnyPublisher()
     }
 
@@ -49,6 +50,7 @@ class Chat {
                                                                    invitePayloadStore: invitePayloadStore,
                                                                    threadsStore: CodableStore<Thread>(defaults: keyValueStorage, identifier: StorageDomainIdentifiers.threads.rawValue))
         self.inviteService = InviteService(networkingInteractor: networkingInteractor, kms: kms, logger: logger)
+        self.messagingService = MessagingService(networkingInteractor: networkingInteractor, logger: logger)
         socketConnectionStatusPublisher = relayClient.socketConnectionStatusPublisher
         setUpEnginesCallbacks()
     }
@@ -88,7 +90,7 @@ class Chat {
     ///   - topic: thread topic
     ///   - message: chat message
     func message(topic: String, message: String) {
-
+        
     }
 
     /// To Ping peer client

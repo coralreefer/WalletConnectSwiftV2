@@ -9,7 +9,7 @@ class InvitationHandlingService {
         case inviteForIdNotFound
     }
     var onInvite: ((InviteEnvelope) -> Void)?
-    var onNewThread: ((String) -> Void)?
+    var onNewThread: ((Thread) -> Void)?
     private let networkingInteractor: NetworkInteracting
     private let invitePayloadStore: CodableStore<(RequestSubscriptionPayload)>
     private let topicToInvitationPubKeyStore: CodableStore<String>
@@ -80,15 +80,6 @@ class InvitationHandlingService {
 
     private func handleInvite(_ invite: Invite, _ payload: RequestSubscriptionPayload) throws {
         logger.debug("did receive an invite")
-
-
-//        // need to generate another pub key for a thread
-//        let threadPubKey = try kms.createX25519KeyPair()
-//        // todo store it and handle in accept
-//
-//        let inviteResponse = InviteResponse(pubKey: threadPubKey.hexRepresentation)
-//        let response = JsonRpcResult.response(JSONRPCResponse<AnyCodable>(id: payload.request.id, result: AnyCodable(inviteResponse)))
-
         invitePayloadStore.set(payload, forKey: invite.pubKey)
         onInvite?(InviteEnvelope(pubKey: invite.pubKey, invite: invite))
     }
@@ -100,8 +91,6 @@ class InvitationHandlingService {
             logger.debug("PubKey for invitation topic not found")
             fatalError("todo")
         }
-
-
 
         let selfPubKey = try AgreementPublicKey(hex: selfPubKeyHex)
 
