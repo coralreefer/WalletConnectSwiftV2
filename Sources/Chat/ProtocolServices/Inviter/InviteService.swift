@@ -79,6 +79,7 @@ class InviteService {
         let selfPubKey = try AgreementPublicKey(hex: selfPubKeyHex)
         let agreementKeys = try kms.performKeyAgreement(selfPublicKey: selfPubKey, peerPublicKey: peerPubKey)
         let threadTopic = agreementKeys.derivedTopic()
+        try kms.setSymmetricKey(agreementKeys.sharedKey, for: threadTopic)
         try await networkingInteractor.subscribe(topic: threadTopic)
         onNewThread?(Thread(topic: threadTopic))
         // TODO - remove symKeyI

@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import WalletConnectUtils
 import Starscream
+
 public enum SocketConnectionStatus {
     case connected
     case disconnected
