@@ -5,6 +5,7 @@ import Combine
 class MessagingService {
     let networkingInteractor: NetworkInteracting
     let logger: ConsoleLogging
+    var onMessage: ((Message) -> Void)?
     private var publishers = [AnyCancellable]()
 
     init(networkingInteractor: NetworkInteracting,
@@ -45,9 +46,8 @@ class MessagingService {
         }.store(in: &publishers)
     }
 
-
-
     private func handleMessage(_ message: Message) {
+        onMessage?(message)
         logger.debug("Received message")
     }
 

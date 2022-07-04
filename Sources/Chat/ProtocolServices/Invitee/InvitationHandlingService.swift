@@ -56,11 +56,13 @@ class InvitationHandlingService {
 
         let threadTopic = threadAgreementKeys.derivedTopic()
 
+        try kms.setSymmetricKey(threadAgreementKeys.sharedKey, for: threadTopic)
+
         try await networkingInteractor.subscribe(topic: threadTopic)
 
         logger.debug("Accepting an invite")
 
-        onNewThread?(threadTopic)
+        onNewThread?(Thread(topic: threadTopic))
     }
 
     private func setUpRequestHandling() {

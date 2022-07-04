@@ -15,14 +15,19 @@ class Chat {
 
     let socketConnectionStatusPublisher: AnyPublisher<SocketConnectionStatus, Never>
 
-    var newThreadPublisherSubject = PassthroughSubject<Thread, Never>()
+    private var newThreadPublisherSubject = PassthroughSubject<Thread, Never>()
     public var newThreadPublisher: AnyPublisher<Thread, Never> {
         newThreadPublisherSubject.eraseToAnyPublisher()
     }
 
-    var invitePublisherSubject = PassthroughSubject<InviteEnvelope, Never>()
+    private var invitePublisherSubject = PassthroughSubject<InviteEnvelope, Never>()
     public var invitePublisher: AnyPublisher<InviteEnvelope, Never> {
         invitePublisherSubject.eraseToAnyPublisher()
+    }
+
+    private var messagePublisherSubject = PassthroughSubject<Message, Never>()
+    public var messagePublisher: AnyPublisher<Message, Never> {
+        messagePublisherSubject.eraseToAnyPublisher()
     }
 
     init(registry: Registry,
@@ -89,8 +94,8 @@ class Chat {
     /// - Parameters:
     ///   - topic: thread topic
     ///   - message: chat message
-    func message(topic: String, message: String) {
-        
+    func message(topic: String, message: String) async throws {
+        try await messagingService.send(topic: topic, messageString: message)
     }
 
     /// To Ping peer client
@@ -108,6 +113,9 @@ class Chat {
         }
         inviteService.onNewThread = { [unowned self] newThread in
             newThreadPublisherSubject.send(newThread)
+        }
+        messagingService.onMessage = { [unowned self] message in
+            messagePublisherSubject.send(message)
         }
     }
 }

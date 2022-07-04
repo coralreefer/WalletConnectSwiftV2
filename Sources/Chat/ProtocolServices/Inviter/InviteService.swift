@@ -9,7 +9,7 @@ class InviteService {
     let logger: ConsoleLogging
     let kms: KeyManagementService
 
-    var onNewThread: ((String) -> Void)?
+    var onNewThread: ((Thread) -> Void)?
     var onInvite: ((Invite) -> Void)?
 
     init(networkingInteractor: NetworkInteracting,
@@ -80,7 +80,7 @@ class InviteService {
         let agreementKeys = try kms.performKeyAgreement(selfPublicKey: selfPubKey, peerPublicKey: peerPubKey)
         let threadTopic = agreementKeys.derivedTopic()
         try await networkingInteractor.subscribe(topic: threadTopic)
-        onNewThread?(threadTopic)
+        onNewThread?(Thread(topic: threadTopic))
         // TODO - remove symKeyI
     }
 }
