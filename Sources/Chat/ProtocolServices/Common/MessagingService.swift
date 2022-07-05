@@ -13,6 +13,7 @@ class MessagingService {
         self.networkingInteractor = networkingInteractor
         self.logger = logger
         setUpResponseHandling()
+        setUpRequestHandling()
     }
 
     func send(topic: String, messageString: String) async throws {

@@ -86,6 +86,7 @@ final class ChatTests: XCTestCase {
     func testMessage() async {
         await waitClientsConnected()
         let messageExpectation = expectation(description: "message received")
+        messageExpectation.expectedFulfillmentCount = 2
         let message = "message"
 
         let account = Account(chainIdentifier: "eip155:1", address: "0x3627523167367216556273151")!
@@ -100,9 +101,17 @@ final class ChatTests: XCTestCase {
             Task {try! await invitee.message(topic: thread.topic, message: message)}
         }.store(in: &publishers)
 
-        inviter.messagePublisher.sink { [unowned self] message in
+        inviter.newThreadPublisher.sink { [unowned self] thread in
+            Task {try! await inviter.message(topic: thread.topic, message: message)}
+        }.store(in: &publishers)
+
+        inviter.messagePublisher.sink { message in
             messageExpectation.fulfill()
-        }
+        }.store(in: &publishers)
+
+        invitee.messagePublisher.sink { message in
+            messageExpectation.fulfill()
+        }.store(in: &publishers)
 
         wait(for: [messageExpectation], timeout: 4)
     }

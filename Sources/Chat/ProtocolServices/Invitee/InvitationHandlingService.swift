@@ -74,8 +74,8 @@ class InvitationHandlingService {
                 } catch {
                     logger.debug("Did not handle invite, error: \(error)")
                 }
-            case .message(let message):
-                print("received message: \(message)")
+            default:
+                return
             }
         }.store(in: &publishers)
     }
