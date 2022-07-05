@@ -1,30 +1,39 @@
 import XCTest
 import WalletConnectUtils
-import TestingUtils
 @testable import WalletConnectKMS
 @testable import WalletConnectSign
+@testable import WalletConnectRelay
 
 final class SignClientTests: XCTestCase {
 
-    let defaultTimeout: TimeInterval = 5.0
+    let defaultTimeout: TimeInterval = 5
 
     var proposer: ClientDelegate!
     var responder: ClientDelegate!
 
     static private func makeClientDelegate(
         name: String,
-        relayHost: String = "dev.relay.walletconnect.com",
+        relayHost: String = "relay.walletconnect.com",
         projectId: String = "8ba9ee138960775e5231b70cc5ef1c3a"
     ) -> ClientDelegate {
         let logger = ConsoleLogger(suffix: name, loggingLevel: .debug)
-        let keychain = KeychainStorage(keychainService: KeychainServiceFake(), serviceIdentifier: "")
+        let keychain = KeychainStorageMock()
+        let relayClient = RelayClient(
+            relayHost: relayHost,
+            projectId: projectId,
+            keyValueStorage: RuntimeKeyValueStorage(),
+            keychainStorage: keychain,
+            socketFactory: SocketFactory(),
+            socketConnectionType: .automatic,
+            logger: logger
+        )
         let client = SignClient(
             metadata: AppMetadata(name: name, description: "", url: "", icons: [""]),
-            projectId: projectId,
-            relayHost: relayHost,
             logger: logger,
-            kms: KeyManagementService(keychain: keychain),
-            keyValueStorage: RuntimeKeyValueStorage())
+            keyValueStorage: RuntimeKeyValueStorage(),
+            keychainStorage: keychain,
+            relayClient: relayClient
+        )
         return ClientDelegate(client: client)
     }
 
@@ -62,7 +71,7 @@ final class SignClientTests: XCTestCase {
         let sessionNamespaces = SessionNamespace.make(toRespond: requiredNamespaces)
 
         wallet.onSessionProposal = { proposal in
-            Task {
+            Task(priority: .high) {
                 do { try await wallet.client.approve(proposalId: proposal.id, namespaces: sessionNamespaces) } catch { XCTFail("\(error)") }
             }
         }
@@ -90,7 +99,7 @@ final class SignClientTests: XCTestCase {
         try await wallet.client.pair(uri: uri!)
 
         wallet.onSessionProposal = { proposal in
-            Task {
+            Task(priority: .high) {
                 do {
                     try await wallet.client.reject(proposalId: proposal.id, reason: .disapprovedChains) // TODO: Review reason
                     store.rejectedProposal = proposal

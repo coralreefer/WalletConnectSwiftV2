@@ -4,7 +4,7 @@ import XCTest
 
 final class AutomaticSocketConnectionHandlerTests: XCTestCase {
     var sut: AutomaticSocketConnectionHandler!
-    var webSocketSession: WebSocketConnecting!
+    var webSocketSession: WebSocketMock!
     var networkMonitor: NetworkMonitoringMock!
     var appStateObserver: AppStateObserving!
     var backgroundTaskRegistrar: BackgroundTaskRegistrarMock!

@@ -2,8 +2,10 @@ import Foundation
 import XCTest
 @testable import WalletConnectRelay
 import TestingUtils
+import Combine
 
-class WebSocketMock: WebSocketProtocol, WebSocketConnecting {
+class WebSocketMock: WebSocketConnecting {
+
     var onText: ((String) -> Void)?
     var onConnect: (() -> Void)?
     var onDisconnect: ((Error?) -> Void)?

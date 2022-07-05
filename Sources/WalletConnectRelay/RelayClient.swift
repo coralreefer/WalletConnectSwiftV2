@@ -1,7 +1,7 @@
 import Foundation
 import Combine
 import WalletConnectUtils
-import Starscream
+import WalletConnectKMS
 
 public enum SocketConnectionStatus {
     case connected
@@ -38,9 +38,11 @@ public final class RelayClient {
     let logger: ConsoleLogging
     static let historyIdentifier = "com.walletconnect.sdk.relayer_client.subscription_json_rpc_record"
 
-    init(dispatcher: Dispatching,
-         logger: ConsoleLogging,
-         keyValueStorage: KeyValueStorage) {
+    init(
+        dispatcher: Dispatching,
+        logger: ConsoleLogging,
+        keyValueStorage: KeyValueStorage
+    ) {
         self.logger = logger
         self.dispatcher = dispatcher
 
@@ -50,21 +52,31 @@ public final class RelayClient {
 
     /// Instantiates Relay Client
     /// - Parameters:
-    ///   - relayHost: proxy server host that your application will use to connect to Waku Network. If you register your project at `www.walletconnect.com` you can use `relay.walletconnect.com`
+    ///   - relayHost: proxy server host that your application will use to connect to Iridium Network. If you register your project at `www.walletconnect.com` you can use `relay.walletconnect.com`
     ///   - projectId: an optional parameter used to access the public WalletConnect infrastructure. Go to `www.walletconnect.com` for info.
     ///   - keyValueStorage: by default WalletConnect SDK will store sequences in UserDefaults
-    ///   - uniqueIdentifier: if your app requires more than one relay client instances you are required to identify them
     ///   - socketConnectionType: socket connection type
     ///   - logger: logger instance
-    public convenience init(relayHost: String,
-                            projectId: String,
-                            keyValueStorage: KeyValueStorage = UserDefaults.standard,
-                            uniqueIdentifier: String? = nil,
-                            socketConnectionType: SocketConnectionType = .automatic,
-                            logger: ConsoleLogging = ConsoleLogger(loggingLevel: .off)) {
-        let url = Self.makeRelayUrl(host: relayHost, projectId: projectId)
-        var socketConnectionHandler: SocketConnectionHandler
-        let socket = WebSocket(url: url)
+    public convenience init(
+        relayHost: String,
+        projectId: String,
+        keyValueStorage: KeyValueStorage = UserDefaults.standard,
+        keychainStorage: KeychainStorageProtocol = KeychainStorage(serviceIdentifier: "com.walletconnect.sdk"),
+        socketFactory: WebSocketFactory,
+        socketConnectionType: SocketConnectionType = .automatic,
+        logger: ConsoleLogging = ConsoleLogger(loggingLevel: .off)
+    ) {
+        let socketAuthenticator = SocketAuthenticator(
+            clientIdStorage: ClientIdStorage(keychain: keychainStorage),
+            didKeyFactory: ED25519DIDKeyFactory(),
+            relayHost: relayHost
+        )
+        let relayUrlFactory = RelayUrlFactory(socketAuthenticator: socketAuthenticator)
+        let socket = socketFactory.create(with: relayUrlFactory.create(
+            host: relayHost,
+            projectId: projectId
+        ))
+        let socketConnectionHandler: SocketConnectionHandler
         switch socketConnectionType {
         case .automatic:
             socketConnectionHandler = AutomaticSocketConnectionHandler(socket: socket)
@@ -72,9 +84,7 @@ public final class RelayClient {
             socketConnectionHandler = ManualSocketConnectionHandler(socket: socket)
         }
         let dispatcher = Dispatcher(socket: socket, socketConnectionHandler: socketConnectionHandler, logger: logger)
-        self.init(dispatcher: dispatcher,
-                  logger: logger,
-                  keyValueStorage: keyValueStorage)
+        self.init(dispatcher: dispatcher, logger: logger, keyValueStorage: keyValueStorage)
     }
 
     public func connect() throws {
@@ -86,9 +96,9 @@ public final class RelayClient {
     }
 
     /// Completes when networking client sends a request, error if it fails on client side
-    public func publish(topic: String, payload: String, prompt: Bool = false) async throws {
-        let params = RelayJSONRPC.PublishParams(topic: topic, message: payload, ttl: defaultTtl, prompt: prompt)
-        let request = JSONRPCRequest<RelayJSONRPC.PublishParams>(method: RelayJSONRPC.Method.publish.rawValue, params: params)
+    public func publish(topic: String, payload: String, tag: PublishTag, prompt: Bool = false) async throws {
+        let params = RelayJSONRPC.PublishParams(topic: topic, message: payload, ttl: defaultTtl, prompt: prompt, tag: tag.rawValue)
+        let request = JSONRPCRequest<RelayJSONRPC.PublishParams>(method: RelayJSONRPC.Method.publish.method, params: params)
         logger.debug("Publishing Payload on Topic: \(topic)")
         let requestJson = try request.json()
         try await dispatcher.send(requestJson)
@@ -98,12 +108,13 @@ public final class RelayClient {
     @discardableResult public func publish(
         topic: String,
         payload: String,
+        tag: PublishTag,
         prompt: Bool = false,
         onNetworkAcknowledge: @escaping ((Error?) -> Void)) -> Int64 {
-        let params = RelayJSONRPC.PublishParams(topic: topic, message: payload, ttl: defaultTtl, prompt: prompt)
-        let request = JSONRPCRequest<RelayJSONRPC.PublishParams>(method: RelayJSONRPC.Method.publish.rawValue, params: params)
+        let params = RelayJSONRPC.PublishParams(topic: topic, message: payload, ttl: defaultTtl, prompt: prompt, tag: tag.rawValue)
+        let request = JSONRPCRequest<RelayJSONRPC.PublishParams>(method: RelayJSONRPC.Method.publish.method, params: params)
         let requestJson = try! request.json()
-        logger.debug("waku: Publishing Payload on Topic: \(topic)")
+        logger.debug("iridium: Publishing Payload on Topic: \(topic)")
         var cancellable: AnyCancellable?
         dispatcher.send(requestJson) { [weak self] error in
             if let error = error {
@@ -123,9 +134,9 @@ public final class RelayClient {
 
     @available(*, renamed: "subscribe(topic:)")
     public func subscribe(topic: String, completion: @escaping (Error?) -> Void) {
-        logger.debug("waku: Subscribing on Topic: \(topic)")
+        logger.debug("iridium: Subscribing on Topic: \(topic)")
         let params = RelayJSONRPC.SubscribeParams(topic: topic)
-        let request = JSONRPCRequest(method: RelayJSONRPC.Method.subscribe.rawValue, params: params)
+        let request = JSONRPCRequest(method: RelayJSONRPC.Method.subscribe.method, params: params)
         let requestJson = try! request.json()
         var cancellable: AnyCancellable?
         dispatcher.send(requestJson) { [weak self] error in
@@ -164,9 +175,9 @@ public final class RelayClient {
             completion(RelyerError.subscriptionIdNotFound)
             return nil
         }
-        logger.debug("waku: Unsubscribing on Topic: \(topic)")
+        logger.debug("iridium: Unsubscribing on Topic: \(topic)")
         let params = RelayJSONRPC.UnsubscribeParams(id: subscriptionId, topic: topic)
-        let request = JSONRPCRequest(method: RelayJSONRPC.Method.unsubscribe.rawValue, params: params)
+        let request = JSONRPCRequest(method: RelayJSONRPC.Method.unsubscribe.method, params: params)
         let requestJson = try! request.json()
         var cancellable: AnyCancellable?
         jsonRpcSubscriptionsHistory.delete(topic: topic)
@@ -201,8 +212,7 @@ public final class RelayClient {
     }
 
     private func handlePayloadMessage(_ payload: String) {
-        if let request = tryDecode(SubscriptionRequest.self, from: payload),
-           request.method == RelayJSONRPC.Method.subscription.rawValue {
+        if let request = tryDecode(SubscriptionRequest.self, from: payload), validate(request: request, method: .subscription) {
             do {
                 try jsonRpcSubscriptionsHistory.set(topic: request.params.data.topic, request: request)
                 onMessage?(request.params.data.topic, request.params.data.message)
@@ -215,10 +225,14 @@ public final class RelayClient {
         } else if let response = tryDecode(SubscriptionResponse.self, from: payload) {
             subscriptionResponsePublisherSubject.send(response)
         } else if let response = tryDecode(JSONRPCErrorResponse.self, from: payload) {
-            logger.error("Received error message from waku network, code: \(response.error.code), message: \(response.error.message)")
+            logger.error("Received error message from iridium network, code: \(response.error.code), message: \(response.error.message)")
         } else {
             logger.error("Unexpected response from network")
         }
+    }
+
+    private func validate<T>(request: JSONRPCRequest<T>, method: RelayJSONRPC.Method) -> Bool {
+        return request.method.contains(method.name)
     }
 
     private func tryDecode<T: Decodable>(_ type: T.Type, from payload: String) -> T? {
@@ -239,13 +253,5 @@ public final class RelayClient {
                 self?.logger.debug("Failed to Respond for request id: \(requestId), error: \(error)")
             }
         }
-    }
-
-    static func makeRelayUrl(host: String, projectId: String) -> URL {
-        var components = URLComponents()
-        components.scheme = "wss"
-        components.host = host
-        components.queryItems = [URLQueryItem(name: "projectId", value: projectId)]
-        return components.url!
     }
 }

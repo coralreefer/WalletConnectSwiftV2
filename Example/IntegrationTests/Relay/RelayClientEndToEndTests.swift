@@ -2,26 +2,34 @@ import Foundation
 import Combine
 import XCTest
 import WalletConnectUtils
-import TestingUtils
-@testable import WalletConnectRelay
 import Starscream
+@testable import WalletConnectRelay
 
 final class RelayClientEndToEndTests: XCTestCase {
 
-    let relayHost = "dev.relay.walletconnect.com"
+    let defaultTimeout: TimeInterval = 10
+
+    let relayHost = "relay.walletconnect.com"
     let projectId = "8ba9ee138960775e5231b70cc5ef1c3a"
-    private var publishers = [AnyCancellable]()
+    private var publishers = Set<AnyCancellable>()
 
     func makeRelayClient() -> RelayClient {
+        let clientIdStorage = ClientIdStorage(keychain: KeychainStorageMock())
+        let socketAuthenticator = SocketAuthenticator(
+            clientIdStorage: clientIdStorage,
+            didKeyFactory: ED25519DIDKeyFactory(),
+            relayHost: relayHost
+        )
+        let urlFactory = RelayUrlFactory(socketAuthenticator: socketAuthenticator)
+        let socket = WebSocket(url: urlFactory.create(host: relayHost, projectId: projectId))
         let logger = ConsoleLogger()
-        let url = RelayClient.makeRelayUrl(host: relayHost, projectId: projectId)
-        let socket = WebSocket(url: url)
         let dispatcher = Dispatcher(socket: socket, socketConnectionHandler: ManualSocketConnectionHandler(socket: socket), logger: logger)
         return RelayClient(dispatcher: dispatcher, logger: logger, keyValueStorage: RuntimeKeyValueStorage())
     }
 
     func testSubscribe() {
         let relayClient = makeRelayClient()
+
         try! relayClient.connect()
         let subscribeExpectation = expectation(description: "subscribe call succeeds")
         subscribeExpectation.assertForOverFulfill = true
@@ -33,12 +41,14 @@ final class RelayClientEndToEndTests: XCTestCase {
                 }
             }
         }.store(in: &publishers)
-        waitForExpectations(timeout: defaultTimeout, handler: nil)
+
+        wait(for: [subscribeExpectation], timeout: defaultTimeout)
     }
 
     func testEndToEndPayload() {
         let relayA = makeRelayClient()
         let relayB = makeRelayClient()
+
         try! relayA.connect()
         try! relayB.connect()
 
@@ -65,7 +75,7 @@ final class RelayClientEndToEndTests: XCTestCase {
             expectationB.fulfill()
         }
         relayA.socketConnectionStatusPublisher.sink {  _ in
-            relayA.publish(topic: randomTopic, payload: payloadA, onNetworkAcknowledge: { error in
+            relayA.publish(topic: randomTopic, payload: payloadA, tag: .unknown, onNetworkAcknowledge: { error in
                 XCTAssertNil(error)
             })
             relayA.subscribe(topic: randomTopic) { error in
@@ -73,7 +83,7 @@ final class RelayClientEndToEndTests: XCTestCase {
             }
         }.store(in: &publishers)
         relayB.socketConnectionStatusPublisher.sink {  _ in
-            relayB.publish(topic: randomTopic, payload: payloadB, onNetworkAcknowledge: { error in
+            relayB.publish(topic: randomTopic, payload: payloadB, tag: .unknown, onNetworkAcknowledge: { error in
                 XCTAssertNil(error)
             })
             relayB.subscribe(topic: randomTopic) { error in
@@ -81,12 +91,19 @@ final class RelayClientEndToEndTests: XCTestCase {
             }
         }.store(in: &publishers)
 
-        waitForExpectations(timeout: defaultTimeout, handler: nil)
+        wait(for: [expectationA, expectationB], timeout: defaultTimeout)
+
         XCTAssertEqual(subscriptionATopic, randomTopic)
         XCTAssertEqual(subscriptionBTopic, randomTopic)
 
         // TODO - uncomment lines when request rebound is resolved
 //        XCTAssertEqual(subscriptionBPayload, payloadA)
 //        XCTAssertEqual(subscriptionAPayload, payloadB)
+    }
+}
+
+extension String {
+    static func randomTopic() -> String {
+        "\(UUID().uuidString)\(UUID().uuidString)".replacingOccurrences(of: "-", with: "").lowercased()
     }
 }

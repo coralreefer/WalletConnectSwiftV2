@@ -2,6 +2,7 @@
 import UIKit
 #endif
 import Foundation
+import Combine
 
 class AutomaticSocketConnectionHandler: SocketConnectionHandler {
     enum Error: Swift.Error {
@@ -13,6 +14,8 @@ class AutomaticSocketConnectionHandler: SocketConnectionHandler {
     private var networkMonitor: NetworkMonitoring
     private let backgroundTaskRegistrar: BackgroundTaskRegistering
 
+    private var publishers = Set<AnyCancellable>()
+
     init(networkMonitor: NetworkMonitoring = NetworkMonitor(),
          socket: WebSocketConnecting,
          appStateObserver: AppStateObserving = AppStateObserver(),
@@ -23,6 +26,7 @@ class AutomaticSocketConnectionHandler: SocketConnectionHandler {
         self.backgroundTaskRegistrar = backgroundTaskRegistrar
         setUpStateObserving()
         setUpNetworkMonitoring()
+
         socket.connect()
     }
 
