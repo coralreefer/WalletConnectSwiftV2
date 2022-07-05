@@ -24,7 +24,6 @@ actor RegistryService {
     func register(account: Account) async throws -> String {
         let pubKey = try kms.createX25519KeyPair()
         let pubKeyHex = pubKey.hexRepresentation
-        print("🧪registry pubkey \(pubKeyHex)")
         try await registry.register(account: account, pubKey: pubKeyHex)
         let topic = pubKey.rawRepresentation.sha256().toHexString()
         try kms.setPublicKey(publicKey: pubKey, for: topic)
