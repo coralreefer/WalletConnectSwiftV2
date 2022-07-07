@@ -24,6 +24,7 @@ Pod::Spec.new do |spec|
   spec.source       = { :git => "https://github.com/coralreefer/WalletConnectSwiftV2.git", :tag => "#{spec.version}" }
   spec.default_subspec = "WalletConnectSign"
   spec.cocoapods_version = '>= 1.4.0'
+  spec.module_name  = 'WalletConnectSwiftV2'
 
   spec.subspec "WalletConnectSign" do |ss|
     ss.source_files = "Sources/WalletConnectSign/**/*.swift"
