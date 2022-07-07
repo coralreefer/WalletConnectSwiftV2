@@ -16,25 +16,40 @@ Pod::Spec.new do |spec|
   wallets. This library provides both client and server parts so that you can integrate
   it in your wallet, or in your dapp - whatever you are working on.
                    DESC
-  spec.homepage     = "https://github.com/sunimp/WalletConnectSwiftV2"
+  spec.homepage     = "https://github.com/coralreefer/WalletConnectSwiftV2"
   spec.license      = { :type => "MIT", :file => "LICENSE" }
-  spec.author             = { "YANGGUANG" => "holaux@gmail.com" }
+  spec.author             = { "Example" => "example@gmail.com" }
   spec.platform     = :ios, "13.0"
   spec.swift_version = "5.0"
-  spec.source       = { :git => "https://github.com/sunimp/WalletConnectSwiftV2.git", :tag => "#{spec.version}" }
-  spec.default_subspec = "Connect"
+  spec.source       = { :git => "https://github.com/coralreefer/WalletConnectSwiftV2.git", :tag => "#{spec.version}" }
+  spec.default_subspec = "WalletConnectSign"
   spec.cocoapods_version = '>= 1.4.0'
 
-  spec.subspec "Connect" do |ss|
-    ss.source_files = "Sources/WalletConnectV2/*.swift"
-    ss.dependency "WalletConnectSwiftV2/Relayer"
+#   spec.subspec "Connect" do |ss|
+#     ss.source_files = "Sources/WalletConnectV2/*.swift"
+#     ss.dependency "WalletConnectSwiftV2/Relayer"
+#     ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
+#     ss.dependency "WalletConnectSwiftV2/WalletConnectKMS"
+#   end
+
+  spec.subspec "WalletConnectSign" do |ss|
+    ss.source_files = "Sources/WalletConnectSign/*.swift"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectRelay"
     ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
     ss.dependency "WalletConnectSwiftV2/WalletConnectKMS"
   end
-
-  spec.subspec "Relayer" do |ss|
-    ss.source_files = "Sources/Relayer/*.swift"
+  
+  spec.subspec "Chat" do |ss|
+    ss.source_files = "Sources/Chat/*.swift"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectRelay"
     ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectKMS"
+  end
+  
+  spec.subspec "WalletConnectRelay" do |ss|
+    ss.source_files = "Sources/WalletConnectRelay/*.swift"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectKMS"
   end
 
   spec.subspec "WalletConnectKMS" do |ss|
@@ -44,6 +59,16 @@ Pod::Spec.new do |spec|
 
   spec.subspec "WalletConnectUtils" do |ss|
     ss.source_files = "Sources/WalletConnectUtils/*.swift"
+    ss.dependency "WalletConnectSwiftV2/Commons"
   end
-
+  
+  spec.subspec "JSONRPC" do |ss|
+    ss.source_files = "Sources/JSONRPC/*.swift"
+    ss.dependency "WalletConnectSwiftV2/Commons"
+  end
+  
+  spec.subspec "Commons" do |ss|
+    ss.source_files = "Sources/Commons/*.swift"
+  end
+  
 end
