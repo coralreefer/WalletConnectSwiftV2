@@ -40,14 +40,14 @@ Pod::Spec.new do |spec|
   end
   
   spec.subspec "Chat" do |ss|
-    ss.source_files = "Sources/Chat/*.swift"
+    ss.source_files = "Sources/Chat/**/*.swift"
     ss.dependency "WalletConnectSwiftV2/WalletConnectRelay"
     ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
     ss.dependency "WalletConnectSwiftV2/WalletConnectKMS"
   end
   
   spec.subspec "WalletConnectRelay" do |ss|
-    ss.source_files = "Sources/WalletConnectRelay/*.swift"
+    ss.source_files = "Sources/WalletConnectRelay/**/*.swift"
     ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
     ss.dependency "WalletConnectSwiftV2/WalletConnectKMS"
   end
