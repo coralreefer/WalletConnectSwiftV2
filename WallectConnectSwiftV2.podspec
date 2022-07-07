@@ -61,7 +61,7 @@ Pod::Spec.new do |spec|
   end
   
   spec.subspec "Commons" do |ss|
-    ss.source_files = "Sources/Commons/**/*.swift"
+    #ss.source_files = "Sources/Commons/**/*.swift"
   end
   
 end
