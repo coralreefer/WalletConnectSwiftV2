@@ -27,37 +27,37 @@ Pod::Spec.new do |spec|
 
   spec.subspec "WalletConnectSign" do |ss|
     ss.source_files = "Sources/WalletConnectSign/**/*.swift"
-    ss.dependency "WalletConnectRelay"
-    ss.dependency "WalletConnectUtils"
-    ss.dependency "WalletConnectKMS"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectRelay"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectKMS"
   end
   
   spec.subspec "Chat" do |ss|
     ss.source_files = "Sources/Chat/**/*.swift"
-    ss.dependency "WalletConnectRelay"
-    ss.dependency "WalletConnectUtils"
-    ss.dependency "WalletConnectKMS"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectRelay"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectKMS"
   end
   
   spec.subspec "WalletConnectRelay" do |ss|
     ss.source_files = "Sources/WalletConnectRelay/**/*.swift"
-    ss.dependency "WalletConnectUtils"
-    ss.dependency "WalletConnectKMS"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectKMS"
   end
 
   spec.subspec "WalletConnectKMS" do |ss|
     ss.source_files = "Sources/WalletConnectKMS/**/*.swift"
-    ss.dependency "WalletConnectUtils"
+    ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
   end
 
   spec.subspec "WalletConnectUtils" do |ss|
     ss.source_files = "Sources/WalletConnectUtils/**/*.swift"
-    ss.dependency "Commons"
+    ss.dependency "WalletConnectSwiftV2/Commons"
   end
   
   spec.subspec "JSONRPC" do |ss|
     ss.source_files = "Sources/JSONRPC/**/*.swift"
-    ss.dependency "Commons"
+    ss.dependency "WalletConnectSwiftV2/Commons"
   end
   
   spec.subspec "Commons" do |ss|
