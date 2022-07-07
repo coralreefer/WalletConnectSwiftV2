@@ -53,22 +53,22 @@ Pod::Spec.new do |spec|
   end
 
   spec.subspec "WalletConnectKMS" do |ss|
-    ss.source_files = "Sources/WalletConnectKMS/*.swift"
+    ss.source_files = "Sources/WalletConnectKMS/**/*.swift"
     ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
   end
 
   spec.subspec "WalletConnectUtils" do |ss|
-    ss.source_files = "Sources/WalletConnectUtils/*.swift"
+    ss.source_files = "Sources/WalletConnectUtils/**/*.swift"
     ss.dependency "WalletConnectSwiftV2/Commons"
   end
   
   spec.subspec "JSONRPC" do |ss|
-    ss.source_files = "Sources/JSONRPC/*.swift"
+    ss.source_files = "Sources/JSONRPC/**/*.swift"
     ss.dependency "WalletConnectSwiftV2/Commons"
   end
   
   spec.subspec "Commons" do |ss|
-    ss.source_files = "Sources/Commons/*.swift"
+    ss.source_files = "Sources/Commons/**/*.swift"
   end
   
 end
