@@ -25,15 +25,8 @@ Pod::Spec.new do |spec|
   spec.default_subspec = "WalletConnectSign"
   spec.cocoapods_version = '>= 1.4.0'
 
-#   spec.subspec "Connect" do |ss|
-#     ss.source_files = "Sources/WalletConnectV2/*.swift"
-#     ss.dependency "WalletConnectSwiftV2/Relayer"
-#     ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
-#     ss.dependency "WalletConnectSwiftV2/WalletConnectKMS"
-#   end
-
   spec.subspec "WalletConnectSign" do |ss|
-    ss.source_files = "Sources/WalletConnectSign/*.swift"
+    ss.source_files = "Sources/WalletConnectSign/**/*.swift"
     ss.dependency "WalletConnectSwiftV2/WalletConnectRelay"
     ss.dependency "WalletConnectSwiftV2/WalletConnectUtils"
     ss.dependency "WalletConnectSwiftV2/WalletConnectKMS"
